@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module block_controller(
     input clk, // Clock for controlling the movement of the icon
     input bright,
@@ -5,78 +7,251 @@ module block_controller(
     input up, input down, input left, input right,
     input [9:0] hCount, vCount,
     output reg [11:0] rgb,
-    output reg [11:0] background
+    output reg [11:0] background,
+    output reg [9:0] xpos1, ypos1
 );
 
-    // Parameters for the icon
-    localparam ICON_WIDTH = 32;  // Width of the icon
-    localparam ICON_HEIGHT = 32; // Height of the icon
-    localparam INITIAL_XPOS = 450; // Initial X position of the icon's center
-    localparam INITIAL_YPOS = 250; // Initial Y position of the icon's center
-
-    // Offsets to align the center of the icon with xpos, ypos
-    localparam ICON_OFFSET_X = INITIAL_XPOS - (ICON_WIDTH / 2);
-    localparam ICON_OFFSET_Y = INITIAL_YPOS - (ICON_HEIGHT / 2);
-
-    // Current position of the icon
-    reg [9:0] xpos, ypos;
+    wire block_fill;
 
     // Flappy Icon ROM interface
-    wire [4:0] icon_row;   // Assuming 5 bits for 32 rows (0 to 31)
-    wire [4:0] icon_col;   // Assuming 5 bits for 32 columns (0 to 31)
-    wire [11:0] icon_rgb;
+    wire [4:0] rom_row;   // Assuming 5 bits for addressing 30 rows
+    wire [4:0] rom_col;   // Assuming 5 bits for addressing 30 columns
+    wire [11:0] rom_rgb;
 
-    // Instantiate your flappy_12_bit_rom
-    flappy_12_bit_rom flappy_icon_rom (
+    // Instantiate the flappy_12_bit_rom
+    flappy_rom flappy_icon_rom (
         .clk(clk), 
-        .row(icon_row), 
-        .col(icon_col), 
-        .color_data(icon_rgb)
+        .row(rom_row), 
+        .col(rom_col), 
+        .color_data(rom_rgb)
     );
 
-    // Logic to map xpos, ypos to ROM row and column
-    assign icon_row = ypos - ICON_OFFSET_Y;
-    assign icon_col = xpos - ICON_OFFSET_X;
+    // Logic to map xpos1, ypos1 to ROM row and column
+    // Adjust this based on the positioning of your icon in the ROM
+    assign rom_row =vCount - ypos1 + 30; ; // Adjust for the icon's vertical position
+    assign rom_col =hCount - xpos1 + 30; // Adjust for the icon's horizontal position
 
     // Determine if current pixel is part of the icon
-    wire icon_fill;
-    assign icon_fill = vCount >= (ypos - ICON_HEIGHT/2) && vCount < (ypos + ICON_HEIGHT/2) &&
-                       hCount >= (xpos - ICON_WIDTH/2)  && hCount < (xpos + ICON_WIDTH/2);
+    assign block_fill = vCount >= (ypos1 - 30) && vCount < (ypos1 + 30) &&
+                        hCount >= (xpos1 - 30) && hCount < (xpos1 + 30);
 
     // RGB output logic
-    always@ (*) begin
-        if(~bright)
+    always @ (*) begin
+        if (~bright)
             rgb = 12'b0000_0000_0000;
-        else if(icon_fill)
-            rgb = icon_rgb; // Use data from flappy_12_bit_rom
+        else if (block_fill)
+            rgb = rom_rgb; // Use data from flappy_12_bit_rom
         else
             rgb = background;
     end
 
     // Logic to move the icon based on button inputs
-    always@(posedge clk, posedge rst) begin
-        if(rst) begin
-            xpos <= INITIAL_XPOS;
-            ypos <= INITIAL_YPOS;
+    always @(posedge clk) begin
+        if (rst) begin
+            xpos1 <= 170; // Initial X position
+            ypos1 <= 250; // Initial Y position
             background <= 12'b1111_1111_1111; // White background on reset
         end else begin
-            if(right && xpos < (800 - ICON_WIDTH/2)) xpos <= xpos + 2;
-            else if(left && xpos > ICON_WIDTH/2) xpos <= xpos - 2;
-            if(up && ypos > ICON_HEIGHT/2) ypos <= ypos - 2;
-            else if(down && ypos < (480 - ICON_HEIGHT/2)) ypos <= ypos + 2;
+            // Adjust positions based on button inputs
+            if (up && ypos1 > 15) 
+                ypos1 <= ypos1 - 2;
+            if (down && ypos1 < 480 - 15)
+                 ypos1 <= ypos1 + 2;
         end
     end
 
-    // Logic for updating background color based on button presses
-    always@(posedge clk) begin
-        if(right)
-            background <= 12'b1111_1111_0000; // Yellow
-        else if(left)
-            background <= 12'b0000_1111_1111; // Cyan
-        else if(up)
-            background <= 12'b0000_0000_1111; // Blue
-        else if(down)
-            background <= 12'b0000_1111_0000; // Green
+    // The background color reflects the most recent button press
+    //always @(posedge clk) begin
+    //    if (rst) 
+    //        background <= 12'b0000_0000_0000; // White background on reset
+        // Additional logic for changing background on button presses can be added here if needed
+   // end
+    
+
+endmodule
+
+module block_controller2(
+    input clk,
+    input collision, // collision flag input
+    input bright,
+    input rst,
+    input up, input down, input left, input right,
+    input [9:0] hCount, vCount,
+    output reg [11:0] rgb,
+    output reg [11:0] background,
+    output reg[9:0] xpos2, ypos2
+);
+    wire block_fill;
+
+    parameter RED = 12'b1111_1101_0000;
+
+    always @(*) begin
+        if (block_fill)
+            if ( collision) 
+                rgb = 12'b1111_1111_1111; 
+            else
+                rgb = RED;
+        else
+            rgb = background;
     end
 
+    assign block_fill = vCount >= (ypos2 - 10) && vCount <= (ypos2 + 10) && hCount >= (xpos2 - 10) && hCount <= (xpos2 + 10);
+
+    always @(posedge clk, posedge rst) begin
+        if (rst) begin
+            xpos2 <= 700;
+            ypos2 <= 250;
+        end else if (clk) begin
+            xpos2 <= xpos2 - 2;
+        end
+    end
+	
+	//the background color reflects the most recent button press
+	//always@(posedge clk, posedge rst) begin
+	//	if(rst)
+	//		background <= 12'b1111_1111_1111;
+	//end
+
+	
+	
+endmodule
+
+
+module block_controller3(
+    input clk,
+    input collision, // collision flag input
+    input bright,
+    input rst,
+    input up, input down, input left, input right,
+    input [9:0] hCount, vCount,
+    output reg [11:0] rgb,
+    output reg [11:0] background,
+    output reg[9:0] xpos3, ypos3
+);
+    wire block_fill;
+
+    parameter RED = 12'b1111_1101_0000;
+
+    always @(*) begin
+        if (block_fill)
+            if ( collision) 
+                rgb = 12'b1111_1111_1111; 
+            else
+                rgb = RED;
+        else
+            rgb = background;
+    end
+
+    assign block_fill = vCount >= (ypos3 - 10) && vCount <= (ypos3 + 10) && hCount >= (xpos3 - 10) && hCount <= (xpos3 + 10);
+
+    always @(posedge clk, posedge rst) begin
+        if (rst) begin
+            xpos3 <= 700;
+            ypos3 <= 250;
+        end else if (clk) begin
+            xpos3 <= xpos3 - 1;
+        end
+    end
+	
+	//the background color reflects the most recent button press
+	//always@(posedge clk, posedge rst) begin
+	//	if(rst)
+	//		background <= 12'b1111_1111_1111;
+	//end
+
+	
+	
+endmodule
+
+
+module block_controller4(
+    input clk,
+    input collision, // collision flag input
+    input bright,
+    input rst,
+    input up, input down, input left, input right,
+    input [9:0] hCount, vCount,
+    output reg [11:0] rgb,
+    output reg [11:0] background,
+    output reg[9:0] xpos4, ypos4
+);
+    wire block_fill;
+
+    parameter RED = 12'b1111_1101_0000;
+
+    always @(*) begin
+        if (block_fill)
+            if ( collision) 
+                rgb = 12'b1111_1111_1111; 
+            else
+                rgb = RED;
+        else
+            rgb = background;
+    end
+
+    assign block_fill = vCount >= (ypos4 - 5) && vCount <= (ypos4 + 5) && hCount >= (xpos4 - 5) && hCount <= (xpos4 + 5);
+
+    always @(posedge clk, posedge rst) begin
+        if (rst) begin
+            xpos4 <= 700;
+            ypos4 <= 250;
+        end else if (clk) begin
+            xpos4 <= xpos4 - 0.5;
+        end
+    end
+	
+	//the background color reflects the most recent button press
+	//always@(posedge clk, posedge rst) begin
+	//	if(rst)
+	//		background <= 12'b1111_1111_1111;
+	//end
+
+	
+	
+endmodule
+
+module block_controller5(
+    input clk,
+    input collision, // collision flag input
+    input bright,
+    input rst,
+    input up, input down, input left, input right,
+    input [9:0] hCount, vCount,
+    output reg [11:0] rgb,
+    output reg [11:0] background,
+    output reg[9:0] xpos5, ypos5
+);
+    wire block_fill;
+
+    parameter RED = 12'b1111_1101_0000;
+
+    always @(*) begin
+        if (block_fill)
+            if (collision) 
+                rgb = 12'b1111_1111_1111; 
+            else
+                rgb = RED;
+        else
+            rgb = background;
+    end
+
+    assign block_fill = vCount >= (ypos5 - 5) && vCount <= (ypos5 + 5) && hCount >= (xpos5 - 5) && hCount <= (xpos5 + 5);
+
+    always @(posedge clk, posedge rst) begin
+        if (rst) begin
+            xpos5 <= 700;
+            ypos5 <= 250;
+        end else if (clk) begin
+            xpos5 <= xpos5 - 0.25;
+        end
+    end
+	
+	//the background color reflects the most recent button press
+	//always@(posedge clk, posedge rst) begin
+	//	if(rst)
+	//		background <= 12'b1111_1111_1111;
+	//end
+
+	
+	
 endmodule
