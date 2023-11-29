@@ -45,7 +45,7 @@ module vga_top(
 	wire[15:0] score;
 	wire up,down,left,right;
 	wire [3:0] anode;
-	wire [11:0] rgb,rgb1;
+	wire [11:0] rgb,rgb1,rgb2,rgb3,rgb4;
 	wire rst;
 	
 	reg [3:0]	SSD;
@@ -80,8 +80,8 @@ module vga_top(
 	block_controller sc(.clk(move_clk), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb), .background(background),.xpos1(sc_xpos),.ypos1(sc_ypos));
 	block_controller2 sc2(.clk(move_clk),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb1), .background(background1),.xpos2(sc2_xpos),.ypos2(sc2_ypos));
 	block_controller3 sc3(.clk(move_clk),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb2), .background(background2),.xpos3(sc3_xpos),.ypos3(sc3_ypos));
-	block_controller4 sc4(.clk(move_clk),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb3), .background(background3),.xpos4(sc4_xpos),.ypos2(sc4_ypos));
-	block_controller5 sc5(.clk(move_clk),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb4), .background(background3),.xpos4(sc5_xpos),.ypos2(sc5_ypos));
+	block_controller4 sc4(.clk(move_clk),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb3), .background(background3),.xpos4(sc4_xpos),.ypos4(sc4_ypos));
+	block_controller5 sc5(.clk(move_clk),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb4), .background(background4),.xpos5(sc5_xpos),.ypos5(sc5_ypos));
 	function block_collision;
         input [9:0] xpos1, ypos1, xpos2, ypos2;
         begin
@@ -111,6 +111,12 @@ module vga_top(
             rgb_reg <= 12'b1111_1111_0000; // Color on collision
         end else if (rgb1 != background1) begin
             rgb_reg <= rgb1; // Display block_controller2's block
+        end else if (rgb2 != background2) begin
+            rgb_reg <= rgb2; // Display block_controller2's block
+        end else if (rgb3 != background3) begin
+            rgb_reg <= rgb3; // Display block_controller2's block
+        end else if (rgb4 != background4) begin
+            rgb_reg <= rgb4; // Display block_controller2's block            
         end else begin
             rgb_reg <= rgb; // Display block_controller's block
         end
