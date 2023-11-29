@@ -49,6 +49,16 @@ module vga_top(
 	wire rst;
 	
 	reg [3:0]	SSD;
+	wire [9:0] sc_xpos;
+	wire [9:0] sc_ypos;
+	wire [9:0] sc2_xpos;
+	wire [9:0] sc2_ypos;
+	wire [9:0] sc3_xpos;
+	wire [9:0] sc3_ypos;
+	wire [9:0] sc4_xpos;
+	wire [9:0] sc4_ypos;
+	wire [9:0] sc5_xpos;
+	wire [9:0] sc5_ypos;
 	reg collision_flag = 0;
 	reg[3:0] collision_counter=0;
 	wire [7:0]	SSD7,SSD6, SSD5, SSD4,SSD3, SSD2, SSD1, SSD0;
@@ -69,6 +79,9 @@ module vga_top(
 	display_controller dc(.clk(ClkPort), .hSync(hSync), .vSync(vSync), .bright(bright), .hCount(hc), .vCount(vc));
 	block_controller sc(.clk(move_clk), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb), .background(background),.xpos1(sc_xpos),.ypos1(sc_ypos));
 	block_controller2 sc2(.clk(move_clk),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb1), .background(background1),.xpos2(sc2_xpos),.ypos2(sc2_ypos));
+	block_controller3 sc3(.clk(move_clk),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb2), .background(background2),.xpos3(sc3_xpos),.ypos3(sc3_ypos));
+	block_controller4 sc4(.clk(move_clk),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb3), .background(background3),.xpos4(sc4_xpos),.ypos2(sc4_ypos));
+	block_controller5 sc5(.clk(move_clk),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb4), .background(background3),.xpos4(sc5_xpos),.ypos2(sc5_ypos));
 	function block_collision;
         input [9:0] xpos1, ypos1, xpos2, ypos2;
         begin
@@ -78,44 +91,34 @@ module vga_top(
     endfunction
     reg [11:0] frgb;
         // Collision detection and counter logic
-    always @(posedge ClkPort) 
-    begin
-        if (block_collision(sc_xpos, sc_ypos, sc2_xpos, sc2_ypos)) 
-        begin
-        collision_flag = 1;
-        if (collision_counter < 5) begin
-            collision_counter <= collision_counter + 1;
-            end
-            frgb =12'b1111_1111_0000 ;
-        end 
-        else 
-        begin
-                if (rgb1 != background1) begin  // If block_controller2 is displaying its block
-                    frgb = rgb1;           // Display block_controller2's block
-                    end 
-                else 
-                    begin
-                        frgb = rgb;
-                    end 
-         end
+        
+     always @(posedge ClkPort) begin
+        if (block_collision(sc_xpos, sc_ypos, sc2_xpos, sc2_ypos)||block_collision(sc_xpos, sc_ypos, sc3_xpos, sc3_ypos)||block_collision(sc_xpos, sc_ypos, sc4_xpos, sc4_ypos)||block_collision(sc_xpos, sc_ypos, sc5_xpos, sc5_ypos)) begin
+            if(!collision_flag) begin
+                collision_counter <= collision_counter + 1;
+                end
+            collision_flag <= 1;
+        end else begin
+            collision_flag <= 0;
+        end
     end
-	
-	
-	
-//	always @(*) begin
-//    if (rgb1 != background1) begin  // If block_controller2 is displaying its block
-//        frgb = rgb1;           // Display block_controller2's block
-//    end else begin
-//        frgb = rgb;            // Otherwise, display block_controller's block
-//    end
-//end
-	
 
+    // Handling RGB output
+    // Ensure rgb_reg is assigned in all branches to avoid latch inference
+    reg [11:0] rgb_reg;  // Define a register to hold the output RGB value
+    always @(posedge ClkPort) begin
+        if (collision_flag) begin
+            rgb_reg <= 12'b1111_1111_0000; // Color on collision
+        end else if (rgb1 != background1) begin
+            rgb_reg <= rgb1; // Display block_controller2's block
+        end else begin
+            rgb_reg <= rgb; // Display block_controller's block
+        end
+    end
 
-	
-	assign vgaR = frgb[11 : 8];
-	assign vgaG = frgb[7  : 4];
-	assign vgaB = frgb[3  : 0];
+    assign vgaR = rgb_reg[11 : 8];
+    assign vgaG = rgb_reg[7  : 4];
+    assign vgaB = rgb_reg[3  : 0];
 	
 	
 	// disable mamory ports
@@ -164,10 +167,10 @@ module vga_top(
 	// Turn off another 4 anodes
 	assign {An7, An6, An5, An4} = 4'b1111;
 	
-	always @ (ssdscan_clk, SSD0, SSD1, SSD2, SSD3)
+	always @ (ssdscan_clk,collision_counter, SSD0, SSD1, SSD2, SSD3)
 	begin : SSD_SCAN_OUT
 		case (ssdscan_clk) 
-				  2'b00: SSD = SSD0;
+				  2'b00: SSD = collision_counter;
 				  2'b01: SSD = SSD1;
 				  2'b10: SSD = SSD2;
 				  2'b11: SSD = SSD3;
