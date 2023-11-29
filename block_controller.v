@@ -32,7 +32,7 @@ module block_controller(
     assign rom_col =hCount - xpos1 + 30; // Adjust for the icon's horizontal position
 
     // Determine if current pixel is part of the icon
-    assign block_fill = vCount >= (ypos1 - 30) && vCount < (ypos1 + 30) &&
+    assign block_fill = vCount >= (ypos1 - 30) && vCount < (ypos1 - 30) &&
                         hCount >= (xpos1 - 30) && hCount < (xpos1 + 30);
 
     // RGB output logic
@@ -50,13 +50,13 @@ module block_controller(
         if (rst) begin
             xpos1 <= 170; // Initial X position
             ypos1 <= 250; // Initial Y position
-            background <= 12'b1111_1111_1111; // White background on reset
+            background <= 12'b0000_1111_0000; // White background on reset
         end else begin
             // Adjust positions based on button inputs
             if (up && ypos1 > 15) 
-                ypos1 <= ypos1 - 2;
+                ypos1 <= ypos1 - 4;
             if (down && ypos1 < 480 - 15)
-                 ypos1 <= ypos1 + 2;
+                 ypos1 <= ypos1 + 4;
         end
     end
 
@@ -147,7 +147,7 @@ module block_controller3(
     always @(posedge clk, posedge rst) begin
         if (rst) begin
             xpos3 <= 700;
-            ypos3 <= 250;
+            ypos3 <= 400;
         end else if (clk) begin
             xpos3 <= xpos3 - 1;
         end
@@ -194,9 +194,9 @@ module block_controller4(
     always @(posedge clk, posedge rst) begin
         if (rst) begin
             xpos4 <= 700;
-            ypos4 <= 250;
+            ypos4 <= 600;
         end else if (clk) begin
-            xpos4 <= xpos4 - 0.5;
+            xpos4 <= xpos4 - 1;
         end
     end
 	
@@ -240,9 +240,9 @@ module block_controller5(
     always @(posedge clk, posedge rst) begin
         if (rst) begin
             xpos5 <= 700;
-            ypos5 <= 250;
+            ypos5 <= 700;
         end else if (clk) begin
-            xpos5 <= xpos5 - 0.25;
+            xpos5 <= xpos5 - 1;
         end
     end
 	
