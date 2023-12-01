@@ -60,9 +60,11 @@ module vga_top(
 	wire [9:0] sc5_xpos;
 	wire [9:0] sc5_ypos;
 	reg collision_flag = 0;
+	reg [3:0] level_counter = 0; 
 	reg[3:0] collision_counter=0;
 	wire [7:0]	SSD7,SSD6, SSD5, SSD4,SSD3, SSD2, SSD1, SSD0;
 	reg [7:0]  	SSD_CATHODES;
+	wire [3:0] level_counter_wire = level_counter;
 	wire [1:0] 	ssdscan_clk;
 	
 	reg [27:0]	DIV_CLK;
@@ -76,12 +78,12 @@ module vga_top(
 	wire move_clk;
 	assign move_clk=DIV_CLK[19]; //slower clock to drive the movement of objects on the vga screen
 	wire [11:0] background,background1;
-	display_controller dc(.clk(ClkPort), .hSync(hSync), .vSync(vSync), .bright(bright), .hCount(hc), .vCount(vc));
+	display_controller dc(.clk(ClkPort),.hSync(hSync), .vSync(vSync), .bright(bright), .hCount(hc), .vCount(vc));
 	block_controller sc(.clk(move_clk), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb), .background(background),.xpos1(sc_xpos),.ypos1(sc_ypos));
-	block_controller2 sc2(.clk(move_clk),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb1), .background(background1),.xpos2(sc2_xpos),.ypos2(sc2_ypos));
-	block_controller3 sc3(.clk(move_clk),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb2), .background(background2),.xpos3(sc3_xpos),.ypos3(sc3_ypos));
-	block_controller4 sc4(.clk(move_clk),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb3), .background(background3),.xpos4(sc4_xpos),.ypos4(sc4_ypos));
-	block_controller5 sc5(.clk(move_clk),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb4), .background(background4),.xpos5(sc5_xpos),.ypos5(sc5_ypos));
+	block_controller2 sc2(.clk(move_clk),.level(level_counter_wire),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb1), .background(background1),.xpos2(sc2_xpos),.ypos2(sc2_ypos));
+	block_controller3 sc3(.clk(move_clk),.level(level_counter_wire),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb2), .background(background2),.xpos3(sc3_xpos),.ypos3(sc3_ypos));
+	block_controller4 sc4(.clk(move_clk),.level(level_counter_wire),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb3), .background(background3),.xpos4(sc4_xpos),.ypos4(sc4_ypos));
+	block_controller5 sc5(.clk(move_clk),.level(level_counter_wire),.collision(collision_flag), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb4), .background(background4),.xpos5(sc5_xpos),.ypos5(sc5_ypos));
 	function block_collision;
         input [9:0] xpos1, ypos1, xpos2, ypos2;
         begin
@@ -92,16 +94,29 @@ module vga_top(
     reg [11:0] frgb;
         // Collision detection and counter logic
         
-     always @(posedge ClkPort) begin
-        if (block_collision(sc_xpos, sc_ypos, sc2_xpos, sc2_ypos)||block_collision(sc_xpos, sc_ypos, sc3_xpos, sc3_ypos)||block_collision(sc_xpos, sc_ypos, sc4_xpos, sc4_ypos)||block_collision(sc_xpos, sc_ypos, sc5_xpos, sc5_ypos)) begin
-            if(!collision_flag) begin
-                collision_counter <= collision_counter + 1;
-                end
+always @(posedge ClkPort) begin
+    if (Reset) begin
+        collision_counter <= 0;
+        level_counter <= 0;
+        collision_flag <= 0;
+    end else if (block_collision(sc_xpos, sc_ypos, sc2_xpos, sc2_ypos) ||
+                 block_collision(sc_xpos, sc_ypos, sc3_xpos, sc3_ypos) ||
+                 block_collision(sc_xpos, sc_ypos, sc4_xpos, sc4_ypos) ||
+                 block_collision(sc_xpos, sc_ypos, sc5_xpos, sc5_ypos)) 
+    begin
+        if (!collision_flag) begin
             collision_flag <= 1;
-        end else begin
-            collision_flag <= 0;
+            if (collision_counter < 3) begin
+                collision_counter <= collision_counter + 1;
+            end else begin
+                collision_counter <= 0;
+                level_counter <= level_counter + 1;
+            end
         end
+    end else begin
+        collision_flag <= 0; // Reset flag when no collision is detected
     end
+end
 
     // Handling RGB output
     // Ensure rgb_reg is assigned in all branches to avoid latch inference
@@ -177,7 +192,7 @@ module vga_top(
 	begin : SSD_SCAN_OUT
 		case (ssdscan_clk) 
 				  2'b00: SSD = collision_counter;
-				  2'b01: SSD = SSD1;
+				  2'b01: SSD = level_counter;
 				  2'b10: SSD = SSD2;
 				  2'b11: SSD = SSD3;
 		endcase 
