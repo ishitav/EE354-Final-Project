@@ -32,7 +32,7 @@ module block_controller(
     assign rom_col =hCount - xpos1 + 30; // Adjust for the icon's horizontal position
 
     // Determine if current pixel is part of the icon
-    assign block_fill = vCount >= (ypos1 - 30) && vCount < (ypos1 - 30) &&
+    assign block_fill = vCount >= (ypos1 - 30) && vCount < (ypos1 + 30) &&
                         hCount >= (xpos1 - 30) && hCount < (xpos1 + 30);
 
     // RGB output logic
@@ -72,6 +72,7 @@ endmodule
 
 module block_controller2(
     input clk,
+    input [3:0] level,
     input collision, // collision flag input
     input bright,
     input rst,
@@ -102,7 +103,7 @@ module block_controller2(
             xpos2 <= 700;
             ypos2 <= 250;
         end else if (clk) begin
-            xpos2 <= xpos2 - 2;
+            xpos2 <= xpos2 - (2+level);
         end
     end
 	
@@ -119,6 +120,7 @@ endmodule
 
 module block_controller3(
     input clk,
+    input [3:0] level,
     input collision, // collision flag input
     input bright,
     input rst,
@@ -149,7 +151,7 @@ module block_controller3(
             xpos3 <= 700;
             ypos3 <= 400;
         end else if (clk) begin
-            xpos3 <= xpos3 - 1;
+            xpos3 <= xpos3 - (1+level);
         end
     end
 	
@@ -166,6 +168,7 @@ endmodule
 
 module block_controller4(
     input clk,
+    input [3:0] level,
     input collision, // collision flag input
     input bright,
     input rst,
@@ -196,7 +199,7 @@ module block_controller4(
             xpos4 <= 700;
             ypos4 <= 600;
         end else if (clk) begin
-            xpos4 <= xpos4 - 1;
+            xpos4 <= xpos4 - (1+level);
         end
     end
 	
@@ -212,6 +215,7 @@ endmodule
 
 module block_controller5(
     input clk,
+    input [3:0] level,
     input collision, // collision flag input
     input bright,
     input rst,
@@ -242,7 +246,7 @@ module block_controller5(
             xpos5 <= 700;
             ypos5 <= 700;
         end else if (clk) begin
-            xpos5 <= xpos5 - 1;
+            xpos5 <= xpos5 - (1+level);
         end
     end
 	
