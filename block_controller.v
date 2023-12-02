@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 module block_controller(
-    input clk, // Clock for controlling the movement of the icon
+    input clk, 
     input bright,
     input rst,
     input up, input down, input left, input right,
@@ -13,12 +13,12 @@ module block_controller(
 
     wire block_fill;
 
-    // Flappy Icon ROM interface
-    wire [4:0] rom_row;   // Assuming 5 bits for addressing 30 rows
-    wire [4:0] rom_col;   // Assuming 5 bits for addressing 30 columns
+
+    wire [4:0] rom_row;   
+    wire [4:0] rom_col;   
     wire [11:0] rom_rgb;
 
-    // Instantiate the flappy_12_bit_rom
+
     flappy_rom flappy_icon_rom (
         .clk(clk), 
         .row(rom_row), 
@@ -26,26 +26,25 @@ module block_controller(
         .color_data(rom_rgb)
     );
 
-    // Logic to map xpos1, ypos1 to ROM row and column
-    // Adjust this based on the positioning of your icon in the ROM
+
     assign rom_row =vCount - ypos1 + 30; ; // Adjust for the icon's vertical position
     assign rom_col =hCount - xpos1 + 30; // Adjust for the icon's horizontal position
 
-    // Determine if current pixel is part of the icon
+
     assign block_fill = vCount >= (ypos1 - 30) && vCount < (ypos1 + 30) &&
                         hCount >= (xpos1 - 30) && hCount < (xpos1 + 30);
 
-    // RGB output logic
+
     always @ (*) begin
         if (~bright)
             rgb = 12'b0000_0000_0000;
         else if (block_fill)
-            rgb = rom_rgb; // Use data from flappy_12_bit_rom
+            rgb = rom_rgb; 
         else
             rgb = background;
     end
 
-    // Logic to move the icon based on button inputs
+
     always @(posedge clk) begin
         if (rst) begin
             xpos1 <= 170; // Initial X position
