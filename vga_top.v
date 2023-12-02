@@ -1,26 +1,5 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    12:18:00 12/14/2017 
-// Design Name: 
-// Module Name:    vga_top 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
-//
-// Dependencies: 
-//
-// Revision: 
-// Revision 0.01 - File Created
-// Additional Comments: 
-//
-// Date: 04/04/2020
-// Author: Yue (Julien) Niu
-// Description: Port from NEXYS3 to NEXYS4
-//////////////////////////////////////////////////////////////////////////////////
+
 module vga_top(
 	input ClkPort,
 	input BtnC,
@@ -118,9 +97,8 @@ always @(posedge ClkPort) begin
     end
 end
 
-    // Handling RGB output
-    // Ensure rgb_reg is assigned in all branches to avoid latch inference
-    reg [11:0] rgb_reg;  // Define a register to hold the output RGB value
+
+    reg [11:0] rgb_reg; 
     always @(posedge ClkPort) begin
         if (collision_flag) begin
             rgb_reg <= 12'b1111_1111_0000; // Color on collision
@@ -158,27 +136,6 @@ end
 	assign SSD0 = background[3:0];
 	
 
-
-	// need a scan clk for the seven segment display 
-	
-	// 100 MHz / 2^18 = 381.5 cycles/sec ==> frequency of DIV_CLK[17]
-	// 100 MHz / 2^19 = 190.7 cycles/sec ==> frequency of DIV_CLK[18]
-	// 100 MHz / 2^20 =  95.4 cycles/sec ==> frequency of DIV_CLK[19]
-	
-	// 381.5 cycles/sec (2.62 ms per digit) [which means all 4 digits are lit once every 10.5 ms (reciprocal of 95.4 cycles/sec)] works well.
-	
-	//                  --|  |--|  |--|  |--|  |--|  |--|  |--|  |--|  |   
-    //                    |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
-	//  DIV_CLK[17]       |__|  |__|  |__|  |__|  |__|  |__|  |__|  |__|
-	//
-	//               -----|     |-----|     |-----|     |-----|     |
-    //                    |  0  |  1  |  0  |  1  |     |     |     |     
-	//  DIV_CLK[18]       |_____|     |_____|     |_____|     |_____|
-	//
-	//         -----------|           |-----------|           |
-    //                    |  0     0  |  1     1  |           |           
-	//  DIV_CLK[19]       |___________|           |___________|
-	//
 
 	assign ssdscan_clk = DIV_CLK[19:18];
 	assign An0	= !(~(ssdscan_clk[1]) && ~(ssdscan_clk[0]));  // when ssdscan_clk = 00
